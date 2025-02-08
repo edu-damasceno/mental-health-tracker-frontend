@@ -71,6 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success("Login successful!");
       router.push("/dashboard");
     } catch (error) {
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        throw new AuthError(
+          "Unable to connect to the server. Please check your connection or try again later."
+        );
+      }
       throw error;
     }
   };
@@ -99,10 +104,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success("Registration successful!");
       router.push("/dashboard");
     } catch (error) {
-      if (error instanceof AuthError) {
-        toast.error(error.message);
-      } else {
-        toast.error("An unexpected error occurred during registration");
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        throw new AuthError(
+          "Unable to connect to the server. Please check your connection or try again later."
+        );
       }
       throw error;
     }
