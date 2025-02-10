@@ -1,62 +1,79 @@
 # Mental Health Tracker Frontend
 
-A Next.js application for tracking and visualizing mental health metrics.
+A modern, responsive Next.js application for tracking and visualizing daily mental health metrics.
 
 ## Features
 
-- User authentication
-- Daily mood, anxiety and stress tracking
-- Interactive trend visualization
-- Real-time updates
-- Responsive design
-- Form validation
-- Error handling
+- 📝 Daily mood and wellness logging
+- 😊 Interactive mood tracking
+- 😴 Sleep quality monitoring
+- 🏃‍♂️ Activity logging
+- 🎯 Symptom tracking
+- 📊 Data visualization and trends
+- 📱 Responsive design
+- 🔄 Real-time updates
 
-## Getting Started
+## Tech Stack
 
-### Prerequisites
+- Next.js 14
+- React & TypeScript
+- Tailwind CSS
+- React Hook Form
+- Zod Validation
+- date-fns
+- Axios
+- React Hot Toast
 
-- Node.js 18+
-- npm or yarn
+## Components
 
-### Installation
+### Core Features
 
-1. Clone the repository
+- Daily Log Entry Form
+- Edit Log Form
+- Trends Visualization
+- Dashboard Overview
+
+### UI Components
+
+- Rating Component
+- Loading Spinner
+- Input Fields
+- Text Areas
+- Cards
+
+## Setup
+
+1. Clone repository
 2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up environment variables (see below)
+4. Start development server:
+   ```bash
+   npm run dev
+   ```
 
-```bash
-npm install
-```
+## Environment Variables
 
-3. Create a `.env.local` file:
+Create a `.env.local` file with:
 
 ```env
 NEXT_PUBLIC_API_URL="http://localhost:8080"
 ```
 
-4. Start the development server:
-
-```bash
-npm run dev
-```
-
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript checks
-
 ## Project Structure
 
 ```
 src/
-  app/              # Next.js app router pages
-  components/       # React components
-  contexts/        # React contexts
-  lib/             # Utility functions
-  types/           # TypeScript types
+├── app/                 # Next.js app router
+│   └── (authenticated) # Protected routes
+├── components/
+│   ├── dashboard/      # Dashboard components
+│   ├── logs/          # Logging components
+│   └── ui/            # Shared UI components
+├── lib/               # Utilities and API client
+└── types/            # TypeScript definitions
 ```
 
 ## License
