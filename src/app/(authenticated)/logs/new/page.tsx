@@ -31,7 +31,7 @@ export default function NewLogEntryPage() {
             Back to Dashboard
           </button>
         </div>
-        <LogEntryForm mode="create" />
+        <LogEntryForm />
       </div>
     </div>
   );

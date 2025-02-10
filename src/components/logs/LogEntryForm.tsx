@@ -32,20 +32,14 @@ const logSchema = z.object({
 
 type LogFormData = z.infer<typeof logSchema>;
 
-interface LogEntryFormProps {
-  logId?: string;
-}
-
-export function LogEntryForm({ logId }: LogEntryFormProps) {
+export function LogEntryForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset,
     watch,
     setValue,
   } = useForm<LogFormData>({
@@ -95,7 +89,7 @@ export function LogEntryForm({ logId }: LogEntryFormProps) {
           : null,
       };
 
-      const response = await api.post("/api/logs", formData);
+      await api.post("/api/logs", formData);
       toast.success("Log created successfully!");
       router.push("/dashboard");
     } catch (error: unknown) {
@@ -116,14 +110,6 @@ export function LogEntryForm({ logId }: LogEntryFormProps) {
       setIsSubmitting(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <LoadingSpinner />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">

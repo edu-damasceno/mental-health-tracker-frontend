@@ -10,9 +10,9 @@ import axios from "axios";
 
 interface AuthContextType {
   user: User | null;
-  isLoading: boolean;
+  loading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (emailOrToken: string, passwordOrUser: string | User) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -57,42 +57,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (emailOrToken: string, passwordOrUser: string | User) => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new AuthError(data.error || "Login failed");
+      // Handle Google login (when receiving token and user object)
+      if (typeof passwordOrUser === "object") {
+        const token = emailOrToken;
+        const user = passwordOrUser;
+        localStorage.setItem("token", token);
+        setUser(user);
+        router.push("/dashboard");
+        return;
       }
 
-      localStorage.setItem("token", data.token);
-      setUser({
-        id: data.userId,
-        email: data.email,
-        name: data.name,
+      // Regular email/password login
+      const email = emailOrToken;
+      const password = passwordOrUser as string;
+      const response = await api.post("/api/auth/login", {
+        email,
+        password,
       });
 
-      toast.success("Login successful!");
-      router.push("/dashboard");
+      if (response.data?.token && response.data?.user) {
+        localStorage.setItem("token", response.data.token);
+        setUser({
+          id: response.data.user.id,
+          email: response.data.user.email,
+          name: response.data.user.name,
+        });
+        toast.success("Login successful!");
+        router.push("/dashboard");
+      } else {
+        throw new Error("Invalid response from server");
+      }
     } catch (error) {
       console.error("Login error:", error);
-      if (error instanceof TypeError && error.message === "Failed to fetch") {
+      if (axios.isAxiosError(error)) {
         throw new AuthError(
-          "Unable to connect to the server. Please check your connection or try again later."
+          error.response?.data?.error || "Invalid credentials"
         );
       }
-      throw error;
+      throw new AuthError("Login failed. Please try again.");
     }
   };
 
@@ -146,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
-    isLoading,
+    loading: isLoading,
     isAuthenticated: !!user,
     login,
     register,

@@ -45,7 +45,6 @@ export function EditLogForm({ logId }: LogEntryFormProps) {
 
   const {
     register,
-    handleSubmit,
     formState: { errors },
     reset,
     watch,
@@ -78,26 +77,26 @@ export function EditLogForm({ logId }: LogEntryFormProps) {
       const fetchLog = async () => {
         try {
           setIsLoading(true);
-          const response = await api.get(`/api/logs/${logId}`);
+          const { data } = await api.get(`/api/logs/${logId}`);
 
           // Parse dates from the response
-          setLogDate(new Date(response.data.createdAt));
-          setLastUpdated(new Date(response.data.updatedAt));
+          setLogDate(new Date(data.createdAt));
+          setLastUpdated(new Date(data.updatedAt));
 
           const logData = {
-            ...response.data,
-            moodLevel: Number(response.data.moodLevel),
-            anxietyLevel: Number(response.data.anxietyLevel),
-            sleepQuality: Number(response.data.sleepQuality),
-            stressLevel: Number(response.data.stressLevel),
-            sleepHours: Number(response.data.sleepHours),
-            symptomSeverity: response.data.symptomSeverity
-              ? Number(response.data.symptomSeverity)
+            ...data,
+            moodLevel: Number(data.moodLevel),
+            anxietyLevel: Number(data.anxietyLevel),
+            sleepQuality: Number(data.sleepQuality),
+            stressLevel: Number(data.stressLevel),
+            sleepHours: Number(data.sleepHours),
+            symptomSeverity: data.symptomSeverity
+              ? Number(data.symptomSeverity)
               : null,
           };
 
           reset(logData);
-        } catch (error) {
+        } catch {
           toast.error("Failed to load log data");
           router.push("/dashboard");
         } finally {
@@ -170,10 +169,10 @@ export function EditLogForm({ logId }: LogEntryFormProps) {
 
           try {
             setIsSubmitting(true);
-            const response = await api.put(`/api/logs/${logId}`, numericData);
+            await api.put(`/api/logs/${logId}`, numericData);
             toast.success("Log updated successfully!");
             router.push("/dashboard");
-          } catch (error: any) {
+          } catch {
             toast.error("Failed to update log");
           } finally {
             setIsSubmitting(false);

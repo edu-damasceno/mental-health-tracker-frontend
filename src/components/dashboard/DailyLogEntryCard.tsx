@@ -5,8 +5,13 @@ import Link from "next/link";
 import { format } from "date-fns";
 import api from "@/lib/api";
 
+interface DailyLog {
+  id: string;
+  updatedAt: string;
+}
+
 export function DailyLogEntryCard() {
-  const [todayLog, setTodayLog] = useState<any>(null);
+  const [todayLog, setTodayLog] = useState<DailyLog | null>(null);
 
   useEffect(() => {
     const fetchTodayLog = async () => {
@@ -16,7 +21,7 @@ export function DailyLogEntryCard() {
           `/api/logs/filter?startDate=${today}&endDate=${today}`
         );
         setTodayLog(response.data[0] || null);
-      } catch (error) {
+      } catch {
         // Keep error silent as it's not critical
       }
     };
@@ -33,7 +38,7 @@ export function DailyLogEntryCard() {
       <div className="mb-4">
         <div className="flex justify-between items-start">
           <h2 className="text-2xl font-semibold text-gray-900">
-            Today's Entry
+            Today&apos;s Entry
           </h2>
           <p className="text-sm font-medium text-gray-500">
             {format(new Date(), "EEEE, MMMM d, yyyy")}

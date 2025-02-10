@@ -7,17 +7,17 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!loading) {
       if (isAuthenticated) {
         router.push("/dashboard");
       } else {
         router.push("/login");
       }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, loading, router]);
 
   // Show loading spinner while checking auth status
   return (

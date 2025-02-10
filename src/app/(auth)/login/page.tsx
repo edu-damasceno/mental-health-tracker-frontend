@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/auth";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { AuthError } from "@/lib/errors";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { useState } from "react";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -17,27 +19,29 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState("");
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
-    setError,
+    formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginForm) => {
     try {
+      setFormError("");
+      setIsLoading(true);
       await login(data.email, data.password);
     } catch (error) {
-      if (error instanceof AuthError) {
-        setError("root", {
-          type: "manual",
-          message: error.message,
-        });
-        return;
-      }
-      console.error("Login failed:", error);
+      setFormError(
+        error instanceof AuthError
+          ? error.message
+          : "An unexpected error occurred"
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,9 +60,9 @@ export default function LoginPage() {
           className="space-y-6"
           noValidate
         >
-          {errors.root && (
+          {formError && (
             <div className="p-3 rounded-md bg-red-50 border border-red-200">
-              <p className="text-sm text-red-600">{errors.root.message}</p>
+              <p className="text-sm text-red-600">{formError}</p>
             </div>
           )}
 
@@ -78,10 +82,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isLoading}
             className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 flex items-center justify-center"
           >
-            {isSubmitting ? (
+            {isLoading ? (
               <>
                 <svg
                   className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -110,6 +114,17 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or</span>
+          </div>
+        </div>
+
+        <GoogleLoginButton />
 
         <p className="text-center text-sm text-gray-600">
           Don&apos;t have an account?{" "}

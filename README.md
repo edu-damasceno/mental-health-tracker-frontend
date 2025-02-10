@@ -1,21 +1,17 @@
 # Mental Health Tracker Frontend
 
-A modern, responsive Next.js application for tracking and visualizing daily mental health metrics.
+Web interface for the Mental Health Tracker application.
 
 ## Features
 
-- 📝 Daily mood and wellness logging
-- 😊 Interactive mood tracking
-- 😴 Sleep quality monitoring
-- 🏃‍♂️ Activity logging
-- 🎯 Symptom tracking
-- 📊 Data visualization and trends
-- 📱 Responsive design
-- 🔄 Real-time updates
+- User authentication and profile management
+- Google Sign-In integration
+- Daily mood and activity logging
+- Responsive design
 
 ## Tech Stack
 
-- Next.js 14
+- Next.js 15
 - React & TypeScript
 - Tailwind CSS
 - React Hook Form
@@ -60,7 +56,24 @@ Create a `.env.local` file with:
 
 ```env
 NEXT_PUBLIC_API_URL="http://localhost:8080"
+NEXT_PUBLIC_GOOGLE_CLIENT_ID="your-google-client-id"
 ```
+
+## Authentication
+
+Users can sign in using:
+
+1. Email and password
+2. Google account (Single Sign-On)
+
+### Google Authentication
+
+To enable Google Sign-In:
+
+1. Create a project in Google Cloud Console
+2. Configure OAuth 2.0 credentials
+3. Add authorized JavaScript origins
+4. Set the client ID in environment variables
 
 ## Project Structure
 
