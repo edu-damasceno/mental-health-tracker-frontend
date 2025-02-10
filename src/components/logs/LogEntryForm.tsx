@@ -346,7 +346,16 @@ export function LogEntryForm({ logId }: LogEntryFormProps) {
               : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {isSubmitting ? <LoadingSpinner /> : "Create Log Entry"}
+          <span className="flex items-center justify-center">
+            {isSubmitting ? (
+              <>
+                <LoadingSpinner />
+                <span className="ml-2">Creating...</span>
+              </>
+            ) : (
+              "Create Log Entry"
+            )}
+          </span>
         </button>
       </form>
     </div>
