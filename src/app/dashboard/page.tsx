@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/auth";
+import { LogEntryForm } from "@/components/logs/LogEntryForm";
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
@@ -26,8 +27,17 @@ export default function DashboardPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-bold">Welcome, {user?.name}!</h2>
-        <p className="mt-2 text-gray-600">Track your mental health journey</p>
+        <div className="px-4 py-6 sm:px-0">
+          <h2 className="text-3xl font-bold">Welcome, {user?.name}!</h2>
+          <p className="mt-2 text-gray-600">Track your mental health journey</p>
+
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Daily Log Entry</h3>
+            <div className="bg-white shadow rounded-lg p-6">
+              <LogEntryForm />
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );

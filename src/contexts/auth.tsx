@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -36,7 +36,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return res.json();
         })
         .then((data) => {
-          setUser(data);
+          setUser({
+            id: data.userId,
+            email: data.email,
+            name: data.name,
+          });
         })
         .catch(() => {
           localStorage.removeItem("token");
@@ -52,13 +56,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
       const data = await res.json();
 
@@ -67,10 +74,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       localStorage.setItem("token", data.token);
-      setUser(data.user);
+      setUser({
+        id: data.userId,
+        email: data.email,
+        name: data.name,
+      });
+
       toast.success("Login successful!");
       router.push("/dashboard");
     } catch (error) {
+      console.error("Login error:", error);
       if (error instanceof TypeError && error.message === "Failed to fetch") {
         throw new AuthError(
           "Unable to connect to the server. Please check your connection or try again later."
@@ -82,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (name: string, email: string, password: string) => {
     try {
+      setIsLoading(true);
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
         {
@@ -96,14 +110,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new AuthError(data.error || "Registration failed");
+        const errorMessage = data.error || "Registration failed";
+        throw new Error(errorMessage);
       }
 
       localStorage.setItem("token", data.token);
-      setUser(data.user);
+      setUser({
+        id: data.userId,
+        email: data.email,
+        name: data.name,
+      });
+
       toast.success("Registration successful!");
       router.push("/dashboard");
     } catch (error) {
+      console.error("Register error:", error);
       if (error instanceof TypeError && error.message === "Failed to fetch") {
         throw new AuthError(
           "Unable to connect to the server. Please check your connection or try again later."

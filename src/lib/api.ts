@@ -16,4 +16,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export default api; 
+// Add error interceptor
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error("API Error:", {
+      config: error.config,
+      response: error.response,
+    });
+    return Promise.reject(error);
+  }
+);
+
+export default api;
