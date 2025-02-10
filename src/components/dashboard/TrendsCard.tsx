@@ -57,12 +57,6 @@ export function TrendsCard() {
       setError(null);
       const response = await api.get("/api/logs/filter", { params });
       setData(response.data);
-      console.log("Fetched trends:", {
-        params,
-        dataCount: response.data.length,
-        firstDate: response.data[0]?.createdAt,
-        lastDate: response.data[response.data.length - 1]?.createdAt,
-      });
     } catch (error) {
       console.error("Failed to fetch trends:", error);
       setError("Failed to load trends data");
@@ -73,7 +67,6 @@ export function TrendsCard() {
 
   useEffect(() => {
     const today = startOfToday();
-    console.log("Today is:", format(today, "EEEE, MMMM d, yyyy"));
 
     let params;
 
@@ -86,11 +79,6 @@ export function TrendsCard() {
           startDate: format(thisWeekStart, "yyyy-MM-dd"),
           endDate: format(thisWeekEnd, "yyyy-MM-dd"),
         };
-        console.log("This week:", {
-          start: format(thisWeekStart, "EEEE, MMMM d"),
-          end: format(thisWeekEnd, "EEEE, MMMM d"),
-          params,
-        });
         break;
       case "last-week":
         const lastWeek = subWeeks(today, 1);
@@ -101,11 +89,6 @@ export function TrendsCard() {
           startDate: format(lastWeekStart, "yyyy-MM-dd"),
           endDate: format(lastWeekEnd, "yyyy-MM-dd"),
         };
-        console.log("Last week:", {
-          start: format(lastWeekStart, "EEEE, MMMM d"),
-          end: format(lastWeekEnd, "EEEE, MMMM d"),
-          params,
-        });
         break;
       case "this-month":
         params = {
@@ -126,7 +109,6 @@ export function TrendsCard() {
     }
 
     if (params.startDate && params.endDate) {
-      console.log("Fetching trends with params:", params);
       fetchTrends(params);
     }
   }, [period, customDates]);

@@ -36,9 +36,11 @@ interface LogEntryFormProps {
   logId?: string;
 }
 
-export function LogEntryForm({ logId }: LogEntryFormProps) {
+export function EditLogForm({ logId }: LogEntryFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [logDate, setLogDate] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const router = useRouter();
 
   const {
@@ -71,51 +73,41 @@ export function LogEntryForm({ logId }: LogEntryFormProps) {
     }
   }, [formValues.symptoms, setValue]);
 
-  const onSubmit = async (data: LogFormData): Promise<void> => {
-    try {
-      setIsSubmitting(true);
+  useEffect(() => {
+    if (logId) {
+      const fetchLog = async () => {
+        try {
+          setIsLoading(true);
+          const response = await api.get(`/api/logs/${logId}`);
 
-      const formData = {
-        // Required numeric fields
-        moodLevel: Number(data.moodLevel),
-        anxietyLevel: Number(data.anxietyLevel),
-        sleepHours: Number(data.sleepHours),
-        sleepQuality: Number(data.sleepQuality),
-        stressLevel: Number(data.stressLevel),
+          // Parse dates from the response
+          setLogDate(new Date(response.data.createdAt));
+          setLastUpdated(new Date(response.data.updatedAt));
 
-        // String fields with defaults
-        physicalActivity: data.physicalActivity?.trim() || "None",
-        socialInteractions: data.socialInteractions?.trim() || "None",
-        symptoms: data.symptoms?.trim() || "",
-        primarySymptom: data.primarySymptom?.trim() || "",
-        symptomSeverity: data.symptoms?.trim()
-          ? data.symptomSeverity
-            ? Number(data.symptomSeverity)
-            : null
-          : null,
+          const logData = {
+            ...response.data,
+            moodLevel: Number(response.data.moodLevel),
+            anxietyLevel: Number(response.data.anxietyLevel),
+            sleepQuality: Number(response.data.sleepQuality),
+            stressLevel: Number(response.data.stressLevel),
+            sleepHours: Number(response.data.sleepHours),
+            symptomSeverity: response.data.symptomSeverity
+              ? Number(response.data.symptomSeverity)
+              : null,
+          };
+
+          reset(logData);
+        } catch (error) {
+          toast.error("Failed to load log data");
+          router.push("/dashboard");
+        } finally {
+          setIsLoading(false);
+        }
       };
 
-      const response = await api.post("/api/logs", formData);
-      toast.success("Log created successfully!");
-      router.push("/dashboard");
-    } catch (error: unknown) {
-      const err = error as {
-        response?: {
-          status?: number;
-          data?: { error?: string };
-        };
-      };
-      const errorMessage = err.response?.data?.error || "Failed to submit log";
-      console.error("💥 Error submitting log:", {
-        message: errorMessage,
-        status: err.response?.status,
-        data: err.response?.data,
-      });
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
+      fetchLog();
     }
-  };
+  }, [logId, reset, router]);
 
   if (isLoading) {
     return (
@@ -130,21 +122,63 @@ export function LogEntryForm({ logId }: LogEntryFormProps) {
       <div className="flex justify-between items-center border-b pb-4">
         <div>
           <h3 className="text-2xl font-semibold text-gray-900">
-            Daily Log Entry
+            Edit Log Entry
           </h3>
-          <div className="mt-2">
-            <p className="text-base font-medium text-gray-600">
-              {format(new Date(), "EEEE, MMMM d, yyyy")}
+          <div className="mt-1 space-y-1">
+            <p className="text-sm text-gray-500">
+              Log Date:{" "}
+              {logDate ? format(logDate, "EEEE, MMMM d, yyyy") : "Loading..."}
             </p>
-            <p className="text-xs text-gray-400 mt-1">Recording for today</p>
+            {lastUpdated && lastUpdated.getTime() !== logDate?.getTime() && (
+              <p className="text-xs text-gray-400">
+                Last updated: {format(lastUpdated, "MMM d, yyyy 'at' h:mm a")}
+              </p>
+            )}
           </div>
         </div>
       </div>
 
       <form
-        onSubmit={handleSubmit((data) => {
-          return onSubmit(data);
-        })}
+        onSubmit={async (e) => {
+          e.preventDefault();
+
+          const formData = {
+            moodLevel: formValues.moodLevel,
+            anxietyLevel: formValues.anxietyLevel,
+            sleepHours: formValues.sleepHours,
+            sleepQuality: formValues.sleepQuality,
+            stressLevel: formValues.stressLevel,
+            physicalActivity: formValues.physicalActivity?.trim() || "None",
+            socialInteractions: formValues.socialInteractions?.trim() || "None",
+            symptoms: formValues.symptoms?.trim() || "",
+            primarySymptom: formValues.primarySymptom?.trim() || "",
+            symptomSeverity: formValues.symptomSeverity || null,
+          };
+
+          // Validate all fields are numbers where required
+          const numericData = {
+            ...formData,
+            moodLevel: Number(formData.moodLevel),
+            anxietyLevel: Number(formData.anxietyLevel),
+            sleepHours: Number(formData.sleepHours),
+            sleepQuality: Number(formData.sleepQuality),
+            stressLevel: Number(formData.stressLevel),
+            symptomSeverity: formData.symptomSeverity
+              ? Number(formData.symptomSeverity)
+              : null,
+          };
+
+          try {
+            setIsSubmitting(true);
+            const response = await api.put(`/api/logs/${logId}`, numericData);
+            toast.success("Log updated successfully!");
+            router.push("/dashboard");
+          } catch (error: any) {
+            toast.error("Failed to update log");
+          } finally {
+            setIsSubmitting(false);
+          }
+        }}
         className="space-y-8"
         noValidate
       >
@@ -346,7 +380,7 @@ export function LogEntryForm({ logId }: LogEntryFormProps) {
               : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {isSubmitting ? <LoadingSpinner /> : "Create Log Entry"}
+          {isSubmitting ? <LoadingSpinner /> : "Update Log Entry"}
         </button>
       </form>
     </div>

@@ -15,9 +15,7 @@ export default function AuthenticatedLayout({
   const router = useRouter();
 
   useEffect(() => {
-    console.log("🔒 Auth state:", { isAuthenticated, isLoading });
     if (!isLoading && !isAuthenticated) {
-      console.log("🚫 Not authenticated, redirecting to login...");
       router.push("/login");
     }
   }, [isAuthenticated, isLoading, router]);

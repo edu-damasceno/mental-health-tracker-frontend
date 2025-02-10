@@ -1,56 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { format } from "date-fns";
 import api from "@/lib/api";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export function DailyLogEntryCard() {
-  const router = useRouter();
-  const [todayLog, setTodayLog] = useState<{ id: string } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [todayLog, setTodayLog] = useState<any>(null);
 
   useEffect(() => {
-    const checkTodayLog = async () => {
+    const fetchTodayLog = async () => {
       try {
-        const response = await api.get("/api/logs/today");
-        setTodayLog(response.data.exists ? response.data.log : null);
+        const today = new Date().toISOString().split("T")[0];
+        const response = await api.get(
+          `/api/logs/filter?startDate=${today}&endDate=${today}`
+        );
+        setTodayLog(response.data[0] || null);
       } catch (error) {
-        console.error("Error checking today's log:", error);
-      } finally {
-        setIsLoading(false);
+        // Keep error silent as it's not critical
       }
     };
-
-    checkTodayLog();
+    fetchTodayLog();
   }, []);
 
   return (
-    <Card className="p-6">
-      <div className="flex flex-col items-center text-center">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          {todayLog ? "Today's Log Entry" : "New Log Entry"}
-        </h3>
-        <p className="text-gray-600 mb-4">
-          {todayLog
-            ? "Update your mood and activities for today"
-            : "Track your daily mood and activities"}
-        </p>
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : (
-          <button
-            onClick={() =>
-              router.push(todayLog ? `/logs/edit/${todayLog.id}` : "/logs/new")
-            }
-            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg 
-              transition-colors duration-200 flex items-center justify-center"
-          >
-            {todayLog ? "Update Entry" : "Add Entry"}
-          </button>
+    <div className="bg-white rounded-lg shadow-sm p-6 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-16 -translate-y-16">
+        <div className="w-full h-full bg-blue-50 rounded-full opacity-20"></div>
+      </div>
+
+      <div className="mb-4">
+        <div className="flex justify-between items-start">
+          <h2 className="text-2xl font-semibold text-gray-900">
+            Today's Entry
+          </h2>
+          <p className="text-sm font-medium text-gray-500">
+            {format(new Date(), "EEEE, MMMM d, yyyy")}
+          </p>
+        </div>
+        {todayLog && (
+          <p className="text-xs text-gray-400 mt-2">
+            Last updated: {format(new Date(todayLog.updatedAt), "h:mm a")}
+          </p>
         )}
       </div>
-    </Card>
+      <p className="text-gray-600 mb-6 max-w-md">
+        {todayLog
+          ? "Keep your daily log up to date by recording any changes in your mood or activities."
+          : "Start tracking your day by recording your mood, activities, and well-being."}
+      </p>
+      <Link
+        href={todayLog ? `/logs/edit/${todayLog.id}` : "/logs/new"}
+        className="block w-full md:w-auto"
+      >
+        <button
+          className={`
+            w-full md:w-auto px-6 py-2.5 rounded-md font-medium
+            transition-all duration-200 flex items-center justify-center
+            ${
+              todayLog
+                ? "bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-50"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }
+          `}
+        >
+          <span className="mr-2">{todayLog ? "✏️" : "📝"}</span>
+          {todayLog ? "Update Entry" : "Create Log Entry"}
+        </button>
+      </Link>
+    </div>
   );
 }
