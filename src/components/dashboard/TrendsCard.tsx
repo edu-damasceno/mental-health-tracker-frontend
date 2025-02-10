@@ -25,6 +25,7 @@ interface ChartData {
   date: string;
   moodLevel: number;
   anxietyLevel: number;
+  stressLevel: number;
   [key: string]: string | number; // for any additional properties
 }
 
@@ -249,6 +250,12 @@ export function TrendsCard() {
                   dataKey="anxietyLevel"
                   stroke="#EC4899"
                   name="Anxiety"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="stressLevel"
+                  stroke="#F59E0B"
+                  name="Stress"
                 />
               </LineChart>
             </ResponsiveContainer>
