@@ -10,7 +10,8 @@ import axios from "axios";
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  isLoading: boolean;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -20,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -49,10 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           router.push("/login");
         })
         .finally(() => {
-          setLoading(false);
+          setIsLoading(false);
         });
     } else {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, [router]);
 
@@ -131,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       setUser(null);
       localStorage.removeItem("token");
       await Promise.resolve();
@@ -139,13 +140,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const value = {
     user,
-    loading,
+    isLoading,
+    isAuthenticated: !!user,
     login,
     register,
     logout,

@@ -1,9 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { LogEntryForm } from "@/components/logs/LogEntryForm";
+import { useRouter } from "next/navigation";
 
-export default function LogEntryPage() {
+// New log entry page
+export default function NewLogEntryPage() {
   const router = useRouter();
 
   return (
@@ -11,7 +12,7 @@ export default function LogEntryPage() {
       <div className="max-w-4xl mx-auto px-4">
         <div className="flex items-center mb-6">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push("/dashboard")}
             className="text-gray-600 hover:text-gray-900 flex items-center"
           >
             <svg
@@ -30,12 +31,7 @@ export default function LogEntryPage() {
             Back to Dashboard
           </button>
         </div>
-
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6">
-            <LogEntryForm />
-          </div>
-        </div>
+        <LogEntryForm mode="create" />
       </div>
     </div>
   );

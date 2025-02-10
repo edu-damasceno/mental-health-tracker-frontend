@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,9 +8,10 @@ import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Rating } from "@/components/ui/rating";
 import { TextArea } from "@/components/ui/textarea";
-import toast from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import api from "@/lib/api";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useRouter } from "next/navigation";
 
 const logSchema = z.object({
   moodLevel: z.number().min(1).max(5).int(),
@@ -21,30 +22,25 @@ const logSchema = z.object({
     .max(24, "Sleep hours cannot exceed 24")
     .multipleOf(0.5, "Sleep hours must be in increments of 0.5"),
   sleepQuality: z.number().min(1).max(5).int(),
-  physicalActivity: z.string().optional().default(""),
-  socialInteractions: z.string().optional().default(""),
+  physicalActivity: z.string().optional(),
+  socialInteractions: z.string().optional(),
   stressLevel: z.number().min(1).max(5).int(),
-  symptoms: z.string().optional().default(""),
+  symptoms: z.string().default(""),
   primarySymptom: z.string().optional().default(""),
   symptomSeverity: z.number().min(1).max(5).optional().nullable(),
 });
 
 type LogFormData = z.infer<typeof logSchema>;
 
-interface LogResponse extends LogFormData {
-  id: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
+interface LogEntryFormProps {
+  mode: "create" | "edit";
+  logId?: string;
 }
 
-export function LogEntryForm() {
+export function LogEntryForm({ mode, logId }: LogEntryFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [existingLog, setExistingLog] = useState<LogResponse | null>(null);
-  const [isFormReady, setIsFormReady] = useState(false);
-  const [initialValues, setInitialValues] = useState<LogFormData | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(mode === "edit");
+  const router = useRouter();
 
   const {
     register,
@@ -76,167 +72,105 @@ export function LogEntryForm() {
     }
   }, [formValues.symptoms, setValue]);
 
-  // Simple function to check if values are different
-  const hasChanges = () => {
-    if (!existingLog) return true; // Allow saving if no existing log
-    if (!initialValues || !isFormReady) return false;
-
-    // Compare each field
-    const changes = {
-      moodLevel:
-        Number(formValues.moodLevel) !== Number(initialValues.moodLevel),
-      anxietyLevel:
-        Number(formValues.anxietyLevel) !== Number(initialValues.anxietyLevel),
-      sleepQuality:
-        Number(formValues.sleepQuality) !== Number(initialValues.sleepQuality),
-      stressLevel:
-        Number(formValues.stressLevel) !== Number(initialValues.stressLevel),
-      sleepHours:
-        Number(formValues.sleepHours) !== Number(initialValues.sleepHours),
-      physicalActivity:
-        formValues.physicalActivity !== initialValues.physicalActivity,
-      socialInteractions:
-        formValues.socialInteractions !== initialValues.socialInteractions,
-      symptoms: formValues.symptoms !== initialValues.symptoms,
-      primarySymptom:
-        formValues.primarySymptom !== initialValues.primarySymptom,
-      symptomSeverity:
-        formValues.symptomSeverity !== initialValues.symptomSeverity,
-    };
-
-    return Object.values(changes).some((changed) => changed);
-  };
-
-  // Update form validation
+  // Load data only in edit mode
   useEffect(() => {
-    const validateForm = () => {
-      const isValid = Object.keys(errors).length === 0;
+    if (mode === "edit" && logId) {
+      const fetchLog = async () => {
+        try {
+          setIsLoading(true);
+          console.log("🔍 Fetching log:", logId);
+          const response = await api.get(`/api/logs/${logId}`);
+          console.log("📥 Fetched log data:", response.data);
 
-      setIsFormValid(isValid);
-    };
-
-    validateForm();
-  }, [errors]);
-
-  // Update initialValues when loading data
-  useEffect(() => {
-    const fetchTodayLog = async () => {
-      try {
-        const today = new Date();
-        const response = await api.get("/api/logs/filter", {
-          params: {
-            period: "custom",
-            startDate: format(today, "yyyy-MM-dd"),
-            endDate: format(today, "yyyy-MM-dd"),
-          },
-        });
-
-        if (response.data && response.data.length > 0) {
-          const todayLog = response.data[0];
-          setExistingLog(todayLog);
-          setLastUpdated(new Date(todayLog.updatedAt));
-
-          const formValues = {
-            ...todayLog,
-            moodLevel: Number(todayLog.moodLevel),
-            anxietyLevel: Number(todayLog.anxietyLevel),
-            sleepQuality: Number(todayLog.sleepQuality),
-            stressLevel: Number(todayLog.stressLevel),
-            sleepHours: Number(todayLog.sleepHours),
-            symptomSeverity: todayLog.symptomSeverity
-              ? Number(todayLog.symptomSeverity)
+          const logData = {
+            ...response.data,
+            moodLevel: Number(response.data.moodLevel),
+            anxietyLevel: Number(response.data.anxietyLevel),
+            sleepQuality: Number(response.data.sleepQuality),
+            stressLevel: Number(response.data.stressLevel),
+            sleepHours: Number(response.data.sleepHours),
+            symptomSeverity: response.data.symptomSeverity
+              ? Number(response.data.symptomSeverity)
               : null,
           };
 
-          setInitialValues(formValues);
-          reset(formValues);
+          reset(logData);
+        } catch (error) {
+          console.error("💥 Error fetching log:", error);
+          toast.error("Failed to load log data");
+          router.push("/dashboard");
+        } finally {
+          setIsLoading(false);
         }
-        setIsFormReady(true);
-      } catch (error) {
-        console.error("Error fetching today's log:", error);
-        setIsFormReady(true);
-      }
-    };
+      };
 
-    fetchTodayLog();
-  }, [reset]);
+      fetchLog();
+    }
+  }, [mode, logId, reset, router]);
 
-  const formattedLastUpdated = useMemo(() => {
-    if (!lastUpdated) return null;
-    return format(lastUpdated, "h:mm a");
-  }, [lastUpdated]);
-
-  const onSubmit = async (data: LogFormData) => {
-    setIsSubmitting(true);
-
+  const onSubmit = async (data: LogFormData): Promise<void> => {
     try {
-      if (existingLog) {
-        const updateData = {
-          moodLevel: Number(data.moodLevel),
-          anxietyLevel: Number(data.anxietyLevel),
-          sleepHours: Number(data.sleepHours),
-          sleepQuality: Number(data.sleepQuality),
-          physicalActivity: data.physicalActivity?.trim() || "",
-          socialInteractions: data.socialInteractions?.trim() || "",
-          stressLevel: Number(data.stressLevel),
-          symptoms: data.symptoms?.trim() || "",
-          primarySymptom: data.primarySymptom?.trim() || "",
-          ...(data.symptoms && data.symptomSeverity
-            ? {
-                symptomSeverity: Number(data.symptomSeverity),
-              }
-            : {
-                symptomSeverity: undefined, // Don't send the field if there are no symptoms
-              }),
-        };
+      setIsSubmitting(true);
 
-        try {
-          const response = await api.put(
-            `/api/logs/${existingLog.id}`,
-            updateData
-          );
-          setExistingLog(response.data);
-          setInitialValues(updateData);
-          setLastUpdated(new Date(response.data.updatedAt));
-          toast.success("Log entry updated successfully!");
-        } catch (error: Error | unknown) {
-          if (error instanceof Error) {
-            console.error("Server error:", error.message);
-          }
-          toast.error("Failed to save log entry");
-        }
+      const formData = {
+        // Required numeric fields
+        moodLevel: Number(data.moodLevel),
+        anxietyLevel: Number(data.anxietyLevel),
+        sleepHours: Number(data.sleepHours),
+        sleepQuality: Number(data.sleepQuality),
+        stressLevel: Number(data.stressLevel),
+
+        // String fields with defaults
+        physicalActivity: data.physicalActivity?.trim() || "None",
+        socialInteractions: data.socialInteractions?.trim() || "None",
+        symptoms: data.symptoms?.trim() || "",
+        primarySymptom: data.primarySymptom?.trim() || "",
+        symptomSeverity: data.symptoms?.trim()
+          ? data.symptomSeverity
+            ? Number(data.symptomSeverity)
+            : null
+          : null,
+      };
+
+      // Debug logging
+      console.log("📝 Submitting log:", {
+        formData,
+        originalData: data,
+      });
+
+      if (mode === "create") {
+        const response = await api.post("/api/logs", formData);
+        console.log("✅ Log created:", response.data);
+        toast.success("Log created successfully!");
+        router.push("/dashboard");
       } else {
-        const createData = {
-          moodLevel: Number(data.moodLevel),
-          anxietyLevel: Number(data.anxietyLevel),
-          sleepHours: Number(data.sleepHours),
-          sleepQuality: Number(data.sleepQuality),
-          physicalActivity: data.physicalActivity?.trim() || "",
-          socialInteractions: data.socialInteractions?.trim() || "",
-          stressLevel: Number(data.stressLevel),
-          symptoms: data.symptoms?.trim() || "",
-          primarySymptom: data.primarySymptom?.trim() || "",
-          symptomSeverity: data.symptoms ? Number(data.symptomSeverity) : null,
-        };
-
-        const response = await api.post("/api/logs", createData);
-        setExistingLog(response.data);
-        setInitialValues(createData);
-        setLastUpdated(new Date());
-        toast.success("Log entry saved successfully!");
+        console.log("🔄 Updating log:", { logId, data });
+        const response = await api.put(`/api/logs/${logId}`, formData);
+        console.log("✅ Log updated:", response.data);
+        toast.success("Log updated successfully!");
+        router.push("/dashboard");
       }
-
-      setInitialValues(data);
-      reset(data);
-    } catch (error: Error | unknown) {
-      if (error instanceof Error) {
-        console.error("Submit error:", error.message);
-      }
-      toast.error("Failed to save log entry");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      const errorMessage = err.response?.data?.error || "Failed to submit log";
+      console.error("💥 Error submitting log:", {
+        message: errorMessage,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -249,24 +183,12 @@ export function LogEntryForm() {
             {format(new Date(), "EEEE, MMMM d, yyyy")}
           </p>
         </div>
-        {formattedLastUpdated && (
-          <span className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
-            Last updated: {formattedLastUpdated}
-          </span>
-        )}
       </div>
 
       <form
-        onSubmit={handleSubmit(async (data) => {
-          if (!hasChanges()) {
-            return;
-          }
-
-          try {
-            await onSubmit(data);
-          } catch (error) {
-            console.error("Submit error:", error);
-          }
+        onSubmit={handleSubmit((data) => {
+          console.log("🚀 Form submit triggered");
+          return onSubmit(data);
         })}
         className="space-y-8"
         noValidate
@@ -462,23 +384,19 @@ export function LogEntryForm() {
 
         <button
           type="submit"
-          disabled={Boolean(
-            isSubmitting || (!hasChanges() && existingLog) || !isFormValid
-          )}
-          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white text-lg font-medium rounded-lg 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-            disabled:opacity-50 disabled:cursor-not-allowed
-            flex items-center justify-center transition-colors"
+          disabled={isSubmitting}
+          className={`w-full px-4 py-2 text-white font-medium rounded-md ${
+            isSubmitting
+              ? "bg-blue-300 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          }`}
         >
           {isSubmitting ? (
-            <>
-              <LoadingSpinner />
-              {existingLog ? "Updating..." : "Saving..."}
-            </>
-          ) : existingLog ? (
-            "Update Log Entry"
+            <LoadingSpinner />
+          ) : mode === "create" ? (
+            "Create Log Entry"
           ) : (
-            "Save Log Entry"
+            "Update Log Entry"
           )}
         </button>
       </form>

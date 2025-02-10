@@ -1,53 +1,56 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import { startOfToday } from "date-fns";
 import api from "@/lib/api";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export function DailyLogEntryCard() {
   const router = useRouter();
-  const [hasTodayEntry, setHasTodayEntry] = useState(false);
+  const [todayLog, setTodayLog] = useState<{ id: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkTodayEntry = async () => {
+    const checkTodayLog = async () => {
       try {
-        const today = startOfToday();
-        const response = await api.get("/api/logs/filter", {
-          params: {
-            startDate: today.toISOString().split("T")[0],
-            endDate: today.toISOString().split("T")[0],
-          },
-        });
-        setHasTodayEntry(response.data.length > 0);
+        const response = await api.get("/api/logs/today");
+        setTodayLog(response.data.exists ? response.data.log : null);
       } catch (error) {
-        console.error("Failed to check today's entry:", error);
+        console.error("Error checking today's log:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkTodayEntry();
+    checkTodayLog();
   }, []);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Daily Log Entry
-      </h3>
-      <p className="text-gray-600 mb-4">
-        Track your daily mood, anxiety levels, and other health metrics.
-      </p>
-      <button
-        onClick={() => router.push("/log-entry")}
-        className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-        disabled={isLoading}
-      >
-        {isLoading
-          ? "Loading..."
-          : hasTodayEntry
-          ? "Edit Today's Entry"
-          : "Add Today's Entry"}
-      </button>
-    </div>
+    <Card className="p-6">
+      <div className="flex flex-col items-center text-center">
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          {todayLog ? "Today's Log Entry" : "New Log Entry"}
+        </h3>
+        <p className="text-gray-600 mb-4">
+          {todayLog
+            ? "Update your mood and activities for today"
+            : "Track your daily mood and activities"}
+        </p>
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <button
+            onClick={() =>
+              router.push(todayLog ? `/logs/edit/${todayLog.id}` : "/logs/new")
+            }
+            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg 
+              transition-colors duration-200 flex items-center justify-center"
+          >
+            {todayLog ? "Update Entry" : "Add Entry"}
+          </button>
+        )}
+      </div>
+    </Card>
   );
 }

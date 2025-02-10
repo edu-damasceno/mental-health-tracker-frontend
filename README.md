@@ -31,7 +31,7 @@ npm install
 3. Create a `.env.local` file:
 
 ```env
-NEXT_PUBLIC_API_URL="http://localhost:8080/api"
+NEXT_PUBLIC_API_URL="http://localhost:8080"
 ```
 
 4. Start the development server:
