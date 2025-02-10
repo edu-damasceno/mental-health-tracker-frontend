@@ -1,10 +1,16 @@
 "use client";
 
+import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/contexts/auth";
+import { Navbar } from "@/components/layout/Navbar";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export default function AuthenticatedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -17,7 +23,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="flex items-center gap-3 text-gray-600">
+          <Spinner className="w-6 h-6" />
+          <span>Loading...</span>
+        </div>
       </div>
     );
   }
@@ -26,5 +35,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      {children}
+    </div>
+  );
 }

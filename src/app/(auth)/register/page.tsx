@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,28 +31,30 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const { register: registerUser } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState("");
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError,
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
 
   const onSubmit = async (data: RegisterForm) => {
     try {
+      setFormError("");
+      setIsLoading(true);
       await registerUser(data.name, data.email, data.password);
     } catch (error) {
-      if (error instanceof AuthError) {
-        // Set form-level error
-        setError("root", {
-          type: "manual",
-          message: error.message,
-        });
-        return;
-      }
-      console.error("Registration failed:", error);
+      setFormError(
+        error instanceof AuthError
+          ? error.message
+          : "An unexpected error occurred"
+      );
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -70,9 +73,9 @@ export default function RegisterPage() {
           className="space-y-6"
           noValidate
         >
-          {errors.root && (
+          {formError && (
             <div className="p-3 rounded-md bg-red-50 border border-red-200">
-              <p className="text-sm text-red-600">{errors.root.message}</p>
+              <p className="text-sm text-red-600">{formError}</p>
             </div>
           )}
 
@@ -106,10 +109,10 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
             className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {isSubmitting ? "Creating account..." : "Create account"}
+            {isLoading ? "Creating account..." : "Create account"}
           </button>
         </form>
 

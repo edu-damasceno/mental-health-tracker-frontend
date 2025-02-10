@@ -5,20 +5,22 @@ import { useRouter } from "next/navigation";
 import { User } from "@/types/auth";
 import toast from "react-hot-toast";
 import { AuthError } from "@/lib/errors";
+import api from "@/lib/api";
+import axios from "axios";
 
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -47,10 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           router.push("/login");
         })
         .finally(() => {
-          setIsLoading(false);
+          setLoading(false);
         });
     } else {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, [router]);
 
@@ -95,25 +97,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      setIsLoading(true);
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name, email, password }),
-        }
-      );
+      const res = await api.post("/api/auth/register", {
+        name,
+        email,
+        password,
+      });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        const errorMessage = data.error || "Registration failed";
-        throw new Error(errorMessage);
-      }
-
+      const data = res.data;
       localStorage.setItem("token", data.token);
       setUser({
         id: data.userId,
@@ -123,29 +113,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       toast.success("Registration successful!");
       router.push("/dashboard");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Register error:", error);
       if (error instanceof TypeError && error.message === "Failed to fetch") {
         throw new AuthError(
           "Unable to connect to the server. Please check your connection or try again later."
         );
       }
-      throw error;
+      if (axios.isAxiosError(error) && error.response?.data?.error) {
+        throw new AuthError(error.response.data.error);
+      }
+      throw new AuthError(
+        error instanceof Error ? error.message : "Registration failed"
+      );
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-    router.push("/login");
-    toast.success("Logged out successfully");
+  const logout = async () => {
+    try {
+      setLoading(true);
+      setUser(null);
+      localStorage.removeItem("token");
+      await Promise.resolve();
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    loading,
+    login,
+    register,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
