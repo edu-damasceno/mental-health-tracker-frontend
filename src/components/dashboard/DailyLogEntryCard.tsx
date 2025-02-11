@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import api from "@/lib/api";
 
 interface DailyLog {
@@ -16,9 +16,13 @@ export function DailyLogEntryCard() {
   useEffect(() => {
     const fetchTodayLog = async () => {
       try {
-        const today = new Date().toISOString().split("T")[0];
+        // Get today's date in user's timezone
+        const now = new Date();
+        const today = format(now, "yyyy-MM-dd");
+        const tomorrow = format(addDays(now, 1), "yyyy-MM-dd");
+
         const response = await api.get(
-          `/api/logs/filter?startDate=${today}&endDate=${today}`
+          `/api/logs/filter?startDate=${today}&endDate=${tomorrow}`
         );
         setTodayLog(response.data[0] || null);
       } catch {
